@@ -27,7 +27,7 @@
                     <i class="fa-solid fa-plane-altitude text-sky-400"></i> Fisiología Respiratoria en Altitud
                 </h1>
                 <p class="text-xs md:text-sm text-gray-400 mt-1">
-                    Simulación Interactiva: Intercambio Gaseoso Automático y Efecto Hipobárico
+                    Simulación Interactiva: Intercambio Gaseoso Sincronizado y Efecto Hipobárico
                 </p>
             </div>
             <span class="px-3 py-1 bg-sky-950 border border-sky-800 text-sky-400 text-xs font-semibold rounded-full">
@@ -139,7 +139,7 @@
                     </div>
                     <p class="text-gray-400">Nitrógeno: <strong class="text-white">78.0% (Constante)</strong></p>
                     <p class="text-gray-400">Vapor de Agua: <strong class="text-sky-300">47 mmHg (37°C)</strong></p>
-                    <span class="text-[11px] text-gray-500 mt-1 block">Gas inerte en la respiración.</span>
+                    <span id="co2Note2" class="text-[11px] text-gray-500 mt-1 block">Gas inerte en la respiración.</span>
                 </div>
             </div>
         </section>
@@ -151,14 +151,14 @@
         <p>Desarrollado por Alfredo Belandria</p>
     </footer>
 
-    <!-- Lógica JavaScript -->
+    <!-- Lógica JavaScript Sincronizada -->
     <script>
         const canvas = document.getElementById('respiratoryCanvas');
         const ctx = canvas.getContext('2d');
 
-        let currentAlt = 0; // 0, 10, 18, 25
-        let breathCycle = 0; // 0 a Math.PI * 2
-        let isLungsExpanding = true;
+        let currentAlt = 0;
+        let phaseTimer = 0; // Control de tiempo sincronizado
+        let isInhaling = true; // true = Inhalando (O2), false = Exhalando (CO2)
 
         let o2Particles = [];
         let co2Particles = [];
@@ -246,44 +246,57 @@
             }
         };
 
-        class O2Particle {
-            constructor() {
+        class Particle {
+            constructor(type) {
+                this.type = type; // 'O2' o 'CO2'
                 this.reset();
             }
 
             reset() {
-                this.progress = Math.random() * -0.2;
-                this.speed = 0.01 + Math.random() * 0.005;
-                this.targetSide = Math.random() < 0.5 ? 'left' : 'right';
-                this.offsetX = (Math.random() - 0.5) * 10;
-                this.offsetY = (Math.random() - 0.5) * 10;
+                this.progress = 0;
+                this.speed = 0.012 + Math.random() * 0.004;
+                this.targetSide = Math.random() < 0.5 ? 'right' : 'left';
+                this.offsetX = (Math.random() - 0.5) * 8;
+                this.offsetY = (Math.random() - 0.5) * 8;
             }
 
             update() {
-                if (isLungsExpanding) {
-                    this.progress += this.speed;
-                    if (this.progress > 1) this.reset();
-                } else {
-                    this.progress = 0;
+                this.progress += this.speed;
+                if (this.progress > 1) {
+                    this.reset();
                 }
             }
 
             draw(w, h) {
-                if (!isLungsExpanding || this.progress < 0) return;
+                if (this.progress > 1) return;
 
                 let px = w * 0.5;
-                let py = h * 0.10;
+                let py = h * 0.08;
                 const carinaY = h * 0.36;
+                const endY = h * 0.62;
 
-                if (this.progress < 0.4) {
-                    const t = this.progress / 0.4;
-                    py = (h * 0.10) + (carinaY - (h * 0.10)) * t;
+                if (this.type === 'O2') {
+                    // Inhalación: Baja desde arriba hacia los pulmones
+                    if (this.progress < 0.45) {
+                        const t = this.progress / 0.45;
+                        py = (h * 0.08) + (carinaY - (h * 0.08)) * t;
+                    } else {
+                        const t = (this.progress - 0.45) / 0.55;
+                        const endX = this.targetSide === 'right' ? w * 0.34 : w * 0.66;
+                        px = (w * 0.5) + (endX - (w * 0.5)) * t;
+                        py = carinaY + (endY - carinaY) * t;
+                    }
                 } else {
-                    const t = (this.progress - 0.4) / 0.6;
-                    const endX = this.targetSide === 'right' ? w * 0.34 : w * 0.66;
-                    const endY = h * 0.65;
-                    px = (w * 0.5) + (endX - (w * 0.5)) * t;
-                    py = carinaY + (endY - carinaY) * t;
+                    // Exhalación: Sube desde los pulmones hacia afuera
+                    if (this.progress < 0.55) {
+                        const t = this.progress / 0.55;
+                        const startX = this.targetSide === 'right' ? w * 0.34 : w * 0.66;
+                        px = startX + ((w * 0.5) - startX) * t;
+                        py = endY + (carinaY - endY) * t;
+                    } else {
+                        const t = (this.progress - 0.55) / 0.45;
+                        py = carinaY + ((h * 0.08) - carinaY) * t;
+                    }
                 }
 
                 px += this.offsetX;
@@ -291,63 +304,9 @@
 
                 ctx.save();
                 ctx.beginPath();
-                ctx.arc(px, py, 3.5, 0, Math.PI * 2);
-                ctx.fillStyle = '#38bdf8';
-                ctx.shadowColor = '#38bdf8';
-                ctx.shadowBlur = 6;
-                ctx.fill();
-                ctx.restore();
-            }
-        }
-
-        class CO2Particle {
-            constructor() {
-                this.reset();
-            }
-
-            reset() {
-                this.progress = Math.random() * -0.2;
-                this.speed = 0.01 + Math.random() * 0.005;
-                this.targetSide = Math.random() < 0.5 ? 'left' : 'right';
-                this.offsetX = (Math.random() - 0.5) * 10;
-                this.offsetY = (Math.random() - 0.5) * 10;
-            }
-
-            update() {
-                if (!isLungsExpanding) {
-                    this.progress += this.speed;
-                    if (this.progress > 1) this.reset();
-                } else {
-                    this.progress = 0;
-                }
-            }
-
-            draw(w, h) {
-                if (isLungsExpanding || this.progress < 0) return;
-
-                let px = w * 0.5;
-                let py = h * 0.10;
-                const carinaY = h * 0.36;
-
-                if (this.progress < 0.6) {
-                    const t = this.progress / 0.6;
-                    const startX = this.targetSide === 'right' ? w * 0.34 : w * 0.66;
-                    const startY = h * 0.65;
-                    px = startX + ((w * 0.5) - startX) * t;
-                    py = startY + (carinaY - startY) * t;
-                } else {
-                    const t = (this.progress - 0.6) / 0.4;
-                    py = carinaY + ((h * 0.10) - carinaY) * t;
-                }
-
-                px += this.offsetX;
-                py += this.offsetY;
-
-                ctx.save();
-                ctx.beginPath();
-                ctx.arc(px, py, 3.5, 0, Math.PI * 2);
-                ctx.fillStyle = '#fbbf24';
-                ctx.shadowColor = '#fbbf24';
+                ctx.arc(px, py, 3.2, 0, Math.PI * 2);
+                ctx.fillStyle = this.type === 'O2' ? '#38bdf8' : '#fbbf24';
+                ctx.shadowColor = this.type === 'O2' ? '#38bdf8' : '#fbbf24';
                 ctx.shadowBlur = 6;
                 ctx.fill();
                 ctx.restore();
@@ -358,14 +317,22 @@
             o2Particles = [];
             co2Particles = [];
 
-            // Densidad de O2 afectada por la altitud
-            let o2Count = 60;
-            if (currentAlt === 10) o2Count = 42;
-            if (currentAlt === 18) o2Count = 26;
-            if (currentAlt === 25) o2Count = 14;
+            let o2Count = 45;
+            if (currentAlt === 10) o2Count = 30;
+            if (currentAlt === 18) o2Count = 18;
+            if (currentAlt === 25) o2Count = 9;
 
-            for (let i = 0; i < o2Count; i++) o2Particles.push(new O2Particle());
-            for (let i = 0; i < 35; i++) co2Particles.push(new CO2Particle());
+            for (let i = 0; i < o2Count; i++) {
+                let p = new Particle('O2');
+                p.progress = Math.random(); // Distribución fluida inicial
+                o2Particles.push(p);
+            }
+
+            for (let i = 0; i < 30; i++) {
+                let p = new Particle('CO2');
+                p.progress = Math.random();
+                co2Particles.push(p);
+            }
         }
 
         function setAltitude(alt) {
@@ -413,63 +380,81 @@
             ctx.scale(scale, scale);
             ctx.translate(-w * 0.5, -h * 0.55);
 
-            // 1. Tráquea y Bronquios
+            // 1. Tráquea Principal
             ctx.fillStyle = '#0284c7';
             ctx.strokeStyle = '#38bdf8';
             ctx.lineWidth = 2;
 
             ctx.beginPath();
-            ctx.roundRect(w * 0.47, h * 0.10, w * 0.06, h * 0.26, 4);
+            ctx.roundRect(w * 0.46, h * 0.06, w * 0.08, h * 0.28, 4);
             ctx.fill();
             ctx.stroke();
 
-            // Anillos traqueales
+            // Anillos traqueales de cartílago
             ctx.strokeStyle = '#bae6fd';
-            ctx.lineWidth = 1.5;
-            for (let y = h * 0.12; y < h * 0.34; y += h * 0.03) {
+            ctx.lineWidth = 2;
+            for (let y = h * 0.08; y < h * 0.32; y += h * 0.03) {
                 ctx.beginPath();
-                ctx.moveTo(w * 0.47, y);
-                ctx.lineTo(w * 0.53, y);
+                ctx.moveTo(w * 0.46, y);
+                ctx.lineTo(w * 0.54, y);
                 ctx.stroke();
             }
 
-            // Bronquios
+            // 2. Bronquios Principales (Con buen grosor)
             ctx.strokeStyle = '#0284c7';
-            ctx.lineWidth = 10;
+            ctx.lineWidth = 18;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            // Bronquio Derecho
             ctx.beginPath();
-            ctx.moveTo(w * 0.5, h * 0.34);
-            ctx.lineTo(w * 0.36, h * 0.46);
-            ctx.moveTo(w * 0.5, h * 0.34);
-            ctx.lineTo(w * 0.64, h * 0.46);
+            ctx.moveTo(w * 0.5, h * 0.32);
+            ctx.lineTo(w * 0.35, h * 0.46);
             ctx.stroke();
 
-            // 2. Pulmón Derecho
+            // Bronquio Izquierdo
+            ctx.beginPath();
+            ctx.moveTo(w * 0.5, h * 0.32);
+            ctx.lineTo(w * 0.65, h * 0.46);
+            ctx.stroke();
+
+            // Anillos bronquiales internos
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(w * 0.5, h * 0.32);
+            ctx.lineTo(w * 0.35, h * 0.46);
+            ctx.moveTo(w * 0.5, h * 0.32);
+            ctx.lineTo(w * 0.65, h * 0.46);
+            ctx.stroke();
+
+            // 3. Pulmón Derecho (3 Lóbulos)
             const rightLungGrad = ctx.createLinearGradient(w * 0.20, h * 0.35, w * 0.45, h * 0.85);
             rightLungGrad.addColorStop(0, '#f43f5e');
             rightLungGrad.addColorStop(1, '#9f1239');
 
             ctx.fillStyle = rightLungGrad;
             ctx.beginPath();
-            ctx.moveTo(w * 0.45, h * 0.38);
-            ctx.quadraticCurveTo(w * 0.32, h * 0.32, w * 0.22, h * 0.48);
-            ctx.quadraticCurveTo(w * 0.18, h * 0.70, w * 0.28, h * 0.85);
-            ctx.quadraticCurveTo(w * 0.42, h * 0.88, w * 0.46, h * 0.75);
-            ctx.quadraticCurveTo(w * 0.44, h * 0.52, w * 0.45, h * 0.38);
+            ctx.moveTo(w * 0.45, h * 0.36);
+            ctx.quadraticCurveTo(w * 0.32, h * 0.30, w * 0.22, h * 0.46);
+            ctx.quadraticCurveTo(w * 0.18, h * 0.68, w * 0.28, h * 0.83);
+            ctx.quadraticCurveTo(w * 0.42, h * 0.86, w * 0.46, h * 0.73);
+            ctx.quadraticCurveTo(w * 0.44, h * 0.50, w * 0.45, h * 0.36);
             ctx.closePath();
             ctx.fill();
 
-            // 3. Pulmón Izquierdo
+            // 4. Pulmón Izquierdo (2 Lóbulos con Escotadura)
             const leftLungGrad = ctx.createLinearGradient(w * 0.55, h * 0.35, w * 0.80, h * 0.85);
             leftLungGrad.addColorStop(0, '#f43f5e');
             leftLungGrad.addColorStop(1, '#9f1239');
 
             ctx.fillStyle = leftLungGrad;
             ctx.beginPath();
-            ctx.moveTo(w * 0.55, h * 0.38);
-            ctx.quadraticCurveTo(w * 0.68, h * 0.32, w * 0.78, h * 0.48);
-            ctx.quadraticCurveTo(w * 0.82, h * 0.70, w * 0.72, h * 0.85);
-            ctx.quadraticCurveTo(w * 0.58, h * 0.88, w * 0.56, h * 0.75);
-            ctx.quadraticCurveTo(w * 0.60, h * 0.62, w * 0.55, h * 0.50);
+            ctx.moveTo(w * 0.55, h * 0.36);
+            ctx.quadraticCurveTo(w * 0.68, h * 0.30, w * 0.78, h * 0.46);
+            ctx.quadraticCurveTo(w * 0.82, h * 0.68, w * 0.72, h * 0.83);
+            ctx.quadraticCurveTo(w * 0.58, h * 0.86, w * 0.56, h * 0.73);
+            ctx.quadraticCurveTo(w * 0.60, h * 0.60, w * 0.55, h * 0.48);
             ctx.closePath();
             ctx.fill();
 
@@ -481,38 +466,46 @@
             const w = canvas.width;
             const h = canvas.height;
 
-            // Ciclo Respiratorio Automático
-            breathCycle += 0.025;
-            const cycleVal = Math.sin(breathCycle);
-            isLungsExpanding = cycleVal > 0;
+            // Control de Ciclo por Temporizador Sincronizado
+            phaseTimer += 0.015;
+            if (phaseTimer > Math.PI * 2) {
+                phaseTimer = 0;
+                isInhaling = !isInhaling; // Alterna exactamente entre Inhalar y Exhalar
+            }
 
-            // Actualizar Badge de Estado de Ciclo
+            const cycleVal = Math.sin(phaseTimer);
+            const scale = 0.92 + (Math.abs(cycleVal)) * 0.06; // Expansión y contracción limpia de los pulmones
+
+            // Actualizar textos del estado del ciclo en la interfaz
             const cycleStatus = document.getElementById('cycleStatus');
-            if (isLungsExpanding) {
-                cycleStatus.innerHTML = '<i class="fa-solid fa-arrow-down-long"></i> INHALANDO O₂';
+            if (isInhaling) {
+                cycleStatus.innerHTML = '<i class="fa-solid fa-arrow-down-long"></i> INHALANDO O₂ (Pulmones llenándose)';
                 cycleStatus.className = 'text-xs font-semibold px-3 py-1 rounded-full bg-sky-500/20 text-sky-400 border border-sky-500/40 animate-pulse';
             } else {
-                cycleStatus.innerHTML = '<i class="fa-solid fa-arrow-up-long"></i> EXHALANDO CO₂';
+                cycleStatus.innerHTML = '<i class="fa-solid fa-arrow-up-long"></i> EXHALANDO CO₂ (Pulmones vaciándose)';
                 cycleStatus.className = 'text-xs font-semibold px-3 py-1 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/40 animate-pulse';
             }
 
-            // Escala de expansión pulmonar
-            const scale = 0.9 + (cycleVal + 1) * 0.05;
-
-            // Dibujar estructura
+            // Dibujar la anatomía pulmonar
             drawLungsAnatomy(w, h, scale);
 
-            // Partículas
-            if (isLungsExpanding) {
-                o2Particles.forEach(p => { p.update(); p.draw(w, h); });
+            // Activar partículas según la fase correspondiente sin cruces
+            if (isInhaling) {
+                o2Particles.forEach(p => {
+                    p.update();
+                    p.draw(w, h);
+                });
             } else {
-                co2Particles.forEach(p => { p.update(); p.draw(w, h); });
+                co2Particles.forEach(p => {
+                    p.update();
+                    p.draw(w, h);
+                });
             }
 
             requestAnimationFrame(animate);
         }
 
-        // Inicializar
+        // Inicializar al cargar
         setAltitude(0);
         animate();
     </script>
