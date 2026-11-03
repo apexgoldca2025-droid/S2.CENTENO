@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fisiología de la Respiración en Altitud</title>
+    <title>Fisiología Respiratoria en Altitud</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons -->
@@ -55,12 +55,12 @@
                         Entorno: Nivel del Mar (760 mmHg)
                     </span>
                     <div class="flex items-center gap-2">
-                        <button id="btnInhale" onclick="setPhase('inhale')" class="px-3 py-1 rounded bg-sky-600 text-white text-xs font-medium">Inhalación</button>
-                        <button id="btnExhale" onclick="setPhase('exhale')" class="px-3 py-1 rounded bg-gray-800 text-gray-300 text-xs font-medium">Exhalación</button>
+                        <button id="btnInhale" onclick="setPhase('inhale')" class="px-3 py-1 rounded bg-sky-600 text-white text-xs font-medium transition-all">Inhalación</button>
+                        <button id="btnExhale" onclick="setPhase('exhale')" class="px-3 py-1 rounded bg-gray-800 text-gray-300 text-xs font-medium transition-all">Exhalación</button>
                     </div>
                 </div>
 
-                <div class="relative w-full h-[280px] bg-slate-950 rounded-lg border border-slate-800 flex items-center justify-center overflow-hidden">
+                <div class="relative w-full h-[320px] md:h-[360px] bg-slate-950 rounded-lg border border-slate-800 flex items-center justify-center overflow-hidden">
                     <canvas id="respiratoryCanvas" class="w-full h-full block"></canvas>
                 </div>
 
@@ -70,7 +70,7 @@
                 </div>
             </div>
 
-            <!-- Resumen Fisiológico Simple -->
+            <!-- Resumen Fisiológico -->
             <div class="bg-[#161b22] border border-gray-800 rounded-xl p-5 shadow-xl flex flex-col justify-between">
                 <div>
                     <h2 id="envTitle" class="text-lg font-bold text-sky-400 border-b border-gray-800 pb-2 mb-3">
@@ -146,8 +146,8 @@
         const canvas = document.getElementById('respiratoryCanvas');
         const ctx = canvas.getContext('2d');
 
-        let currentEnv = 'seaLevel'; // 'seaLevel' o 'highAltitude'
-        let currentPhase = 'inhale'; // 'inhale' o 'exhale'
+        let currentEnv = 'seaLevel';
+        let currentPhase = 'inhale';
         let animProgress = 0;
         let particles = [];
 
@@ -198,15 +198,89 @@
             }
         };
 
+        class Particle {
+            constructor() {
+                this.reset();
+            }
+
+            reset() {
+                this.progress = Math.random() * -0.3;
+                this.speed = (currentEnv === 'seaLevel' ? 0.008 : 0.005) + Math.random() * 0.003;
+                this.targetSide = Math.random() < 0.5 ? 'left' : 'right';
+                this.offsetX = (Math.random() - 0.5) * 12;
+                this.offsetY = (Math.random() - 0.5) * 12;
+            }
+
+            update() {
+                this.progress += this.speed;
+                if (this.progress > 1) {
+                    this.reset();
+                }
+            }
+
+            draw(w, h) {
+                if (this.progress < 0) return;
+
+                let px = w * 0.5;
+                let py = h * 0.12;
+
+                const tracheaTopY = h * 0.12;
+                const carinaY = h * 0.38;
+
+                if (currentPhase === 'inhale') {
+                    if (this.progress < 0.4) {
+                        const t = this.progress / 0.4;
+                        py = tracheaTopY + (carinaY - tracheaTopY) * t;
+                    } else {
+                        const t = (this.progress - 0.4) / 0.6;
+                        const endX = this.targetSide === 'right' ? w * 0.33 : w * 0.67;
+                        const endY = h * 0.65;
+                        px = (w * 0.5) + (endX - (w * 0.5)) * t;
+                        py = carinaY + (endY - carinaY) * t;
+                    }
+                } else {
+                    const rev = 1 - this.progress;
+                    if (rev > 0.6) {
+                        const t = (rev - 0.6) / 0.4;
+                        const startX = this.targetSide === 'right' ? w * 0.33 : w * 0.67;
+                        const startY = h * 0.65;
+                        px = (w * 0.5) + (startX - (w * 0.5)) * t;
+                        py = carinaY + (startY - carinaY) * t;
+                    } else {
+                        const t = rev / 0.6;
+                        py = tracheaTopY + (carinaY - tracheaTopY) * t;
+                    }
+                }
+
+                px += this.offsetX * (this.progress > 0.4 ? 1.5 : 0.3);
+                py += this.offsetY * (this.progress > 0.4 ? 1.5 : 0.3);
+
+                ctx.save();
+                ctx.beginPath();
+                const radius = currentEnv === 'seaLevel' ? 3.5 : 2.2;
+                ctx.arc(px, py, radius, 0, Math.PI * 2);
+                
+                if (currentPhase === 'inhale') {
+                    ctx.fillStyle = currentEnv === 'seaLevel' ? '#38bdf8' : '#93c5fd';
+                    ctx.shadowColor = '#38bdf8';
+                    ctx.shadowBlur = currentEnv === 'seaLevel' ? 6 : 2;
+                } else {
+                    ctx.fillStyle = '#fbbf24';
+                    ctx.shadowColor = '#fbbf24';
+                    ctx.shadowBlur = 5;
+                }
+                
+                ctx.globalAlpha = 1 - (this.progress * 0.4);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
         function initParticles() {
             particles = [];
-            const count = currentEnv === 'seaLevel' ? 40 : 15; // Menos densidad efectiva a gran altitud
+            const count = currentEnv === 'seaLevel' ? 50 : 18;
             for (let i = 0; i < count; i++) {
-                particles.push({
-                    x: Math.random(),
-                    y: Math.random(),
-                    speed: 0.006 + Math.random() * 0.004
-                });
+                particles.push(new Particle());
             }
         }
 
@@ -214,7 +288,6 @@
             currentEnv = env;
             const data = envData[env];
 
-            // Botones
             document.getElementById('btnSeaLevel').className = env === 'seaLevel'
                 ? "p-4 rounded-xl border border-sky-500 bg-sky-600 text-white font-bold text-sm md:text-base transition-all flex items-center justify-center gap-2 shadow-lg"
                 : "p-4 rounded-xl border border-gray-700 bg-gray-800 text-gray-300 font-bold text-sm md:text-base transition-all flex items-center justify-center gap-2 shadow-lg";
@@ -223,7 +296,6 @@
                 ? "p-4 rounded-xl border border-rose-500 bg-rose-600 text-white font-bold text-sm md:text-base transition-all flex items-center justify-center gap-2 shadow-lg"
                 : "p-4 rounded-xl border border-gray-700 bg-gray-800 text-gray-300 font-bold text-sm md:text-base transition-all flex items-center justify-center gap-2 shadow-lg";
 
-            // Panel de datos
             document.getElementById('envTitle').innerText = data.title;
             document.getElementById('envDesc').innerText = data.desc;
             document.getElementById('pbValue').innerText = data.pb;
@@ -252,12 +324,104 @@
         function setPhase(phase) {
             currentPhase = phase;
             document.getElementById('btnInhale').className = phase === 'inhale'
-                ? "px-3 py-1 rounded bg-sky-600 text-white text-xs font-medium"
-                : "px-3 py-1 rounded bg-gray-800 text-gray-300 text-xs font-medium";
+                ? "px-3 py-1 rounded bg-sky-600 text-white text-xs font-medium transition-all"
+                : "px-3 py-1 rounded bg-gray-800 text-gray-300 text-xs font-medium transition-all";
 
             document.getElementById('btnExhale').className = phase === 'exhale'
-                ? "px-3 py-1 rounded bg-amber-600 text-white text-xs font-medium"
-                : "px-3 py-1 rounded bg-gray-800 text-gray-300 text-xs font-medium";
+                ? "px-3 py-1 rounded bg-amber-600 text-white text-xs font-medium transition-all"
+                : "px-3 py-1 rounded bg-gray-800 text-gray-300 text-xs font-medium transition-all";
+        }
+
+        function drawLungsAnatomy(w, h) {
+            const scale = 1 + (animProgress * 0.05);
+
+            ctx.save();
+            ctx.translate(w * 0.5, h * 0.55);
+            ctx.scale(scale, scale);
+            ctx.translate(-w * 0.5, -h * 0.55);
+
+            // 1. Tráquea y Bronquios
+            ctx.fillStyle = '#0284c7';
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 2;
+
+            // Tráquea Principal
+            ctx.beginPath();
+            ctx.roundRect(w * 0.47, h * 0.10, w * 0.06, h * 0.28, 4);
+            ctx.fill();
+            ctx.stroke();
+
+            // Anillos de cartílago
+            ctx.strokeStyle = '#bae6fd';
+            ctx.lineWidth = 1.5;
+            for (let y = h * 0.12; y < h * 0.36; y += h * 0.03) {
+                ctx.beginPath();
+                ctx.moveTo(w * 0.47, y);
+                ctx.lineTo(w * 0.53, y);
+                ctx.stroke();
+            }
+
+            // Bronquio Derecho
+            ctx.strokeStyle = '#0284c7';
+            ctx.lineWidth = 12;
+            ctx.beginPath();
+            ctx.moveTo(w * 0.5, h * 0.36);
+            ctx.lineTo(w * 0.36, h * 0.48);
+            ctx.stroke();
+
+            // Bronquio Izquierdo
+            ctx.beginPath();
+            ctx.moveTo(w * 0.5, h * 0.36);
+            ctx.lineTo(w * 0.64, h * 0.48);
+            ctx.stroke();
+
+            // 2. Pulmón Derecho (3 Lóbulos: Superior, Medio e Inferior)
+            const rightLungGrad = ctx.createLinearGradient(w * 0.20, h * 0.35, w * 0.45, h * 0.85);
+            rightLungGrad.addColorStop(0, '#f43f5e');
+            rightLungGrad.addColorStop(1, '#9f1239');
+
+            ctx.fillStyle = rightLungGrad;
+            ctx.beginPath();
+            ctx.moveTo(w * 0.45, h * 0.38);
+            ctx.quadraticCurveTo(w * 0.32, h * 0.32, w * 0.22, h * 0.48);
+            ctx.quadraticCurveTo(w * 0.18, h * 0.70, w * 0.28, h * 0.85);
+            ctx.quadraticCurveTo(w * 0.42, h * 0.88, w * 0.46, h * 0.75);
+            ctx.quadraticCurveTo(w * 0.44, h * 0.52, w * 0.45, h * 0.38);
+            ctx.closePath();
+            ctx.fill();
+
+            // Fisuras Lóbulos Pulmón Derecho
+            ctx.strokeStyle = '#881337';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(w * 0.22, h * 0.52);
+            ctx.lineTo(w * 0.44, h * 0.58);
+            ctx.moveTo(w * 0.24, h * 0.68);
+            ctx.lineTo(w * 0.42, h * 0.66);
+            ctx.stroke();
+
+            // 3. Pulmón Izquierdo (2 Lóbulos con Escotadura Cardíaca)
+            const leftLungGrad = ctx.createLinearGradient(w * 0.55, h * 0.35, w * 0.80, h * 0.85);
+            leftLungGrad.addColorStop(0, '#f43f5e');
+            leftLungGrad.addColorStop(1, '#9f1239');
+
+            ctx.fillStyle = leftLungGrad;
+            ctx.beginPath();
+            ctx.moveTo(w * 0.55, h * 0.38);
+            ctx.quadraticCurveTo(w * 0.68, h * 0.32, w * 0.78, h * 0.48);
+            ctx.quadraticCurveTo(w * 0.82, h * 0.70, w * 0.72, h * 0.85);
+            ctx.quadraticCurveTo(w * 0.58, h * 0.88, w * 0.56, h * 0.75);
+            ctx.quadraticCurveTo(w * 0.60, h * 0.62, w * 0.55, h * 0.50); // Escotadura cardíaca
+            ctx.closePath();
+            ctx.fill();
+
+            // Fisura Pulmón Izquierdo
+            ctx.beginPath();
+            ctx.moveTo(w * 0.76, h * 0.52);
+            ctx.lineTo(w * 0.58, h * 0.70);
+            ctx.stroke();
+
+            ctx.restore();
         }
 
         function animate() {
@@ -266,48 +430,18 @@
             const h = canvas.height;
 
             if (currentPhase === 'inhale') {
-                if (animProgress < 1) animProgress += 0.02;
+                if (animProgress < 1) animProgress += 0.03;
             } else {
-                if (animProgress > 0) animProgress -= 0.02;
+                if (animProgress > 0) animProgress -= 0.03;
             }
 
-            // Pulmones
-            const lungScale = 0.8 + (animProgress * 0.2);
-            ctx.save();
-            ctx.translate(w * 0.5, h * 0.5);
-            ctx.scale(lungScale, lungScale);
-            ctx.translate(-w * 0.5, -h * 0.5);
+            // Dibujar estructura anatómica mejorada
+            drawLungsAnatomy(w, h);
 
-            ctx.fillStyle = currentEnv === 'seaLevel' ? '#f43f5e' : '#e11d48';
-            ctx.beginPath();
-            ctx.ellipse(w * 0.38, h * 0.5, w * 0.12, h * 0.22, 0, 0, Math.PI * 2);
-            ctx.ellipse(w * 0.62, h * 0.5, w * 0.12, h * 0.22, 0, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Tráquea
-            ctx.fillStyle = '#38bdf8';
-            ctx.fillRect(w * 0.48, h * 0.15, w * 0.04, h * 0.20);
-            ctx.restore();
-
-            // Flujo de Partículas O2 / CO2
+            // Actualizar y dibujar flujo de partículas
             particles.forEach(p => {
-                if (currentPhase === 'inhale') {
-                    p.y += p.speed;
-                    if (p.y > 0.6) p.y = 0.1;
-                } else {
-                    p.y -= p.speed;
-                    if (p.y < 0.1) p.y = 0.6;
-                }
-
-                const px = w * 0.48 + (p.x * w * 0.04);
-                const py = h * p.y;
-
-                ctx.beginPath();
-                ctx.arc(px, py, currentEnv === 'seaLevel' ? 3.5 : 2.5, 0, Math.PI * 2);
-                ctx.fillStyle = currentPhase === 'inhale' 
-                    ? (currentEnv === 'seaLevel' ? '#38bdf8' : '#93c5fd')
-                    : '#fbbf24';
-                ctx.fill();
+                p.update();
+                p.draw(w, h);
             });
 
             requestAnimationFrame(animate);
