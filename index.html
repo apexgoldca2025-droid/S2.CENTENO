@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fisiología de la Respiración en Altitud</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #0d1117;
+            color: #c9d1d9;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between p-4 md:p-6">
+
+    <div class="max-w-5xl w-full mx-auto flex flex-col gap-6 my-auto">
+        
+        <!-- Header Principal -->
+        <header class="border-b border-gray-800 pb-4 text-center md:text-left flex flex-col md:flex-row justify-between items-center gap-3">
+            <div>
+                <h1 class="text-2xl md:text-3xl font-bold text-white tracking-wide flex items-center justify-center md:justify-start gap-3">
+                    <i class="fa-solid fa-plane-altitude text-sky-400"></i> Fisiología Respiratoria en Altitud
+                </h1>
+                <p class="text-xs md:text-sm text-gray-400 mt-1">
+                    Comparativa: Nivel del Mar (Techo Fisiológico) vs. Gran Altitud (25,000 ft)
+                </p>
+            </div>
+            <span class="px-3 py-1 bg-sky-950 border border-sky-800 text-sky-400 text-xs font-semibold rounded-full">
+                Medicina Aeroespacial
+            </span>
+        </header>
+
+        <!-- Selección de Entorno Fisiológico -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <button id="btnSeaLevel" onclick="setEnvironment('seaLevel')" class="p-4 rounded-xl border border-sky-500 bg-sky-600 text-white font-bold text-sm md:text-base transition-all flex items-center justify-center gap-2 shadow-lg">
+                <i class="fa-solid fa-water"></i> 1. Nivel del Mar (0 ft / Techo Fisiológico)
+            </button>
+            <button id="btnHighAltitude" onclick="setEnvironment('highAltitude')" class="p-4 rounded-xl border border-gray-700 bg-gray-800 text-gray-300 font-bold text-sm md:text-base transition-all flex items-center justify-center gap-2 shadow-lg">
+                <i class="fa-solid fa-mountain"></i> 2. Gran Altitud (25,000 ft - Hipoxia)
+            </button>
+        </div>
+
+        <!-- Visor y Control de Mecánica Inhalación / Exhalación -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- Canvas Interactivo -->
+            <div class="lg:col-span-2 bg-[#161b22] border border-gray-800 rounded-xl p-4 shadow-xl flex flex-col justify-between relative overflow-hidden">
+                <div class="flex items-center justify-between border-b border-gray-800 pb-2 mb-2">
+                    <span id="envBadge" class="text-xs font-semibold px-2.5 py-1 rounded bg-sky-900/80 text-sky-300 border border-sky-700">
+                        Entorno: Nivel del Mar (760 mmHg)
+                    </span>
+                    <div class="flex items-center gap-2">
+                        <button id="btnInhale" onclick="setPhase('inhale')" class="px-3 py-1 rounded bg-sky-600 text-white text-xs font-medium">Inhalación</button>
+                        <button id="btnExhale" onclick="setPhase('exhale')" class="px-3 py-1 rounded bg-gray-800 text-gray-300 text-xs font-medium">Exhalación</button>
+                    </div>
+                </div>
+
+                <div class="relative w-full h-[280px] bg-slate-950 rounded-lg border border-slate-800 flex items-center justify-center overflow-hidden">
+                    <canvas id="respiratoryCanvas" class="w-full h-full block"></canvas>
+                </div>
+
+                <div class="mt-3 text-xs text-gray-400 flex justify-between items-center">
+                    <span>Presión Barométrica (P<sub>B</sub>): <strong id="pbValue" class="text-sky-300">760 mmHg</strong></span>
+                    <span>Presión Parcial O₂ (P<sub>O₂</sub>): <strong id="po2Value" class="text-sky-300">159 mmHg</strong></span>
+                </div>
+            </div>
+
+            <!-- Resumen Fisiológico Simple -->
+            <div class="bg-[#161b22] border border-gray-800 rounded-xl p-5 shadow-xl flex flex-col justify-between">
+                <div>
+                    <h2 id="envTitle" class="text-lg font-bold text-sky-400 border-b border-gray-800 pb-2 mb-3">
+                        Techo Fisiológico Normal
+                    </h2>
+                    <p id="envDesc" class="text-xs md:text-sm text-gray-300 leading-relaxed mb-4">
+                        La presión atmosférica permite una difusión óptima de oxígeno en los alvéolos hacia la sangre.
+                    </p>
+
+                    <div id="effectCards" class="space-y-2.5 text-xs">
+                        <!-- Puntos dinámicos -->
+                    </div>
+                </div>
+
+                <div class="mt-4 pt-3 border-t border-gray-800 text-[11px] text-gray-500">
+                    <span>Estado Alveolar: <strong id="alvStatus" class="text-emerald-400">Saturación O₂ (98%)</strong></span>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Tabla Comparativa de Porcentajes de Gases -->
+        <section class="bg-[#161b22] border border-gray-800 rounded-xl p-5 shadow-xl">
+            <h3 class="text-sm md:text-base font-bold text-white mb-3 flex items-center gap-2">
+                <i class="fa-solid fa-chart-simple text-sky-400"></i> Composición de Gases Inhalados vs. Exhalados
+            </h3>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs md:text-sm">
+                <!-- Oxígeno (O2) -->
+                <div class="p-3 bg-slate-900/80 rounded-lg border border-slate-800">
+                    <div class="flex justify-between font-semibold text-sky-300 mb-1">
+                        <span>Oxígeno (O₂)</span>
+                        <i class="fa-solid fa-lungs"></i>
+                    </div>
+                    <p class="text-gray-400">Inhalado: <strong class="text-white">20.9%</strong></p>
+                    <p class="text-gray-400">Exhalado: <strong id="o2ExhaleText" class="text-sky-400">16.0%</strong></p>
+                    <span id="o2Note" class="text-[11px] text-gray-500 mt-1 block">Consumo tisular eficiente.</span>
+                </div>
+
+                <!-- Dióxido de Carbono (CO2) -->
+                <div class="p-3 bg-slate-900/80 rounded-lg border border-slate-800">
+                    <div class="flex justify-between font-semibold text-amber-400 mb-1">
+                        <span>Dióxido de Carbono (CO₂)</span>
+                        <i class="fa-solid fa-smog"></i>
+                    </div>
+                    <p class="text-gray-400">Inhalado: <strong class="text-white">0.04%</strong></p>
+                    <p class="text-gray-400">Exhalado: <strong id="co2ExhaleText" class="text-amber-400">4.0%</strong></p>
+                    <span id="co2Note" class="text-[11px] text-gray-500 mt-1 block">Eliminación metabólica normal.</span>
+                </div>
+
+                <!-- Nitrógeno y OTROS -->
+                <div class="p-3 bg-slate-900/80 rounded-lg border border-slate-800">
+                    <div class="flex justify-between font-semibold text-gray-300 mb-1">
+                        <span>Nitrógeno (N₂) y Humedad</span>
+                        <i class="fa-solid fa-cloud"></i>
+                    </div>
+                    <p class="text-gray-400">Nitrógeno: <strong class="text-white">78.0% (Constante)</strong></p>
+                    <p class="text-gray-400">Vapor de Agua: <strong class="text-sky-300">47 mmHg (37°C)</strong></p>
+                    <span class="text-[11px] text-gray-500 mt-1 block">Gas inerte en la respiración.</span>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- Footer -->
+    <footer class="max-w-5xl w-full mx-auto mt-6 pt-3 border-t border-gray-800 text-center text-xs text-gray-500">
+        <p>Desarrollado por Alfredo Belandria</p>
+    </footer>
+
+    <!-- Lógica JavaScript -->
+    <script>
+        const canvas = document.getElementById('respiratoryCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let currentEnv = 'seaLevel'; // 'seaLevel' o 'highAltitude'
+        let currentPhase = 'inhale'; // 'inhale' o 'exhale'
+        let animProgress = 0;
+        let particles = [];
+
+        function resizeCanvas() {
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        const envData = {
+            seaLevel: {
+                title: "Techo Fisiológico (Nivel del Mar)",
+                desc: "A nivel del mar, la presión atmosférica normal empuja con fuerza suficiente las moléculas de O₂ hacia los capilares alveolares.",
+                pb: "760 mmHg",
+                po2: "159 mmHg",
+                status: "Saturación O₂ Normal (98%)",
+                statusColor: "text-emerald-400",
+                badge: "Entorno: Nivel del Mar (760 mmHg)",
+                badgeColor: "bg-sky-900/80 text-sky-300 border-sky-700",
+                o2Exhale: "16.0%",
+                co2Exhale: "4.0%",
+                o2Note: "Intercambio gaseoso completo en la hematosis.",
+                co2Note: "Ritmo metabólico estable.",
+                points: [
+                    { title: "Presión Barométrica Óptima", text: "La diferencia de presión facilita el transporte de O₂ a la hemoglobina." },
+                    { title: "Frecuencia Respiratoria", text: "Ritmo basal eficiente en reposo (12-16 respiraciones/min)." }
+                ]
+            },
+            highAltitude: {
+                title: "Gran Altitud (25,000 pies)",
+                desc: "La composición del aire sigue siendo 21% O₂, pero al caer la presión atmosférica a un tercio, entra muy poco oxígeno por volumen de aire.",
+                pb: "282 mmHg",
+                po2: "59 mmHg",
+                status: "Saturación O₂ Crítica (< 60% - Hipoxia)",
+                statusColor: "text-rose-400",
+                badge: "Entorno: 25,000 ft (282 mmHg)",
+                badgeColor: "bg-rose-900/80 text-rose-300 border-rose-700",
+                o2Exhale: "18.5%",
+                co2Exhale: "2.8%",
+                o2Note: "Poco oxígeno absorbido por baja presión parcial.",
+                co2Note: "Hiperventilación reduce el CO₂ en sangre.",
+                points: [
+                    { title: "Hipoxia Hipobárica", text: "Falta de presión para forzar el paso del O₂ a través de la membrana alveolar." },
+                    { title: "Hiperventilación Compensatoria", text: "El cuerpo acelera la inhalación/exhalación expulsando CO₂ excesivo." }
+                ]
+            }
+        };
+
+        function initParticles() {
+            particles = [];
+            const count = currentEnv === 'seaLevel' ? 40 : 15; // Menos densidad efectiva a gran altitud
+            for (let i = 0; i < count; i++) {
+                particles.push({
+                    x: Math.random(),
+                    y: Math.random(),
+                    speed: 0.006 + Math.random() * 0.004
+                });
+            }
+        }
+
+        function setEnvironment(env) {
+            currentEnv = env;
+            const data = envData[env];
+
+            // Botones
+            document.getElementById('btnSeaLevel').className = env === 'seaLevel'
+                ? "p-4 rounded-xl border border-sky-500 bg-sky-600 text-white font-bold text-sm md:text-base transition-all flex items-center justify-center gap-2 shadow-lg"
+                : "p-4 rounded-xl border border-gray-700 bg-gray-800 text-gray-300 font-bold text-sm md:text-base transition-all flex items-center justify-center gap-2 shadow-lg";
+
+            document.getElementById('btnHighAltitude').className = env === 'highAltitude'
+                ? "p-4 rounded-xl border border-rose-500 bg-rose-600 text-white font-bold text-sm md:text-base transition-all flex items-center justify-center gap-2 shadow-lg"
+                : "p-4 rounded-xl border border-gray-700 bg-gray-800 text-gray-300 font-bold text-sm md:text-base transition-all flex items-center justify-center gap-2 shadow-lg";
+
+            // Panel de datos
+            document.getElementById('envTitle').innerText = data.title;
+            document.getElementById('envDesc').innerText = data.desc;
+            document.getElementById('pbValue').innerText = data.pb;
+            document.getElementById('po2Value').innerText = data.po2;
+            document.getElementById('alvStatus').innerText = data.status;
+            document.getElementById('alvStatus').className = data.statusColor;
+
+            document.getElementById('envBadge').innerText = data.badge;
+            document.getElementById('envBadge').className = `text-xs font-semibold px-2.5 py-1 rounded border ${data.badgeColor}`;
+
+            document.getElementById('o2ExhaleText').innerText = data.o2Exhale;
+            document.getElementById('co2ExhaleText').innerText = data.co2Exhale;
+            document.getElementById('o2Note').innerText = data.o2Note;
+            document.getElementById('co2Note').innerText = data.co2Note;
+
+            document.getElementById('effectCards').innerHTML = data.points.map(pt => `
+                <div class="p-3 bg-slate-900/80 rounded-lg border border-slate-800">
+                    <span class="font-semibold ${env === 'seaLevel' ? 'text-sky-300' : 'text-rose-300'} block mb-0.5">${pt.title}</span>
+                    <p class="text-gray-400">${pt.text}</p>
+                </div>
+            `).join('');
+
+            initParticles();
+        }
+
+        function setPhase(phase) {
+            currentPhase = phase;
+            document.getElementById('btnInhale').className = phase === 'inhale'
+                ? "px-3 py-1 rounded bg-sky-600 text-white text-xs font-medium"
+                : "px-3 py-1 rounded bg-gray-800 text-gray-300 text-xs font-medium";
+
+            document.getElementById('btnExhale').className = phase === 'exhale'
+                ? "px-3 py-1 rounded bg-amber-600 text-white text-xs font-medium"
+                : "px-3 py-1 rounded bg-gray-800 text-gray-300 text-xs font-medium";
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const w = canvas.width;
+            const h = canvas.height;
+
+            if (currentPhase === 'inhale') {
+                if (animProgress < 1) animProgress += 0.02;
+            } else {
+                if (animProgress > 0) animProgress -= 0.02;
+            }
+
+            // Pulmones
+            const lungScale = 0.8 + (animProgress * 0.2);
+            ctx.save();
+            ctx.translate(w * 0.5, h * 0.5);
+            ctx.scale(lungScale, lungScale);
+            ctx.translate(-w * 0.5, -h * 0.5);
+
+            ctx.fillStyle = currentEnv === 'seaLevel' ? '#f43f5e' : '#e11d48';
+            ctx.beginPath();
+            ctx.ellipse(w * 0.38, h * 0.5, w * 0.12, h * 0.22, 0, 0, Math.PI * 2);
+            ctx.ellipse(w * 0.62, h * 0.5, w * 0.12, h * 0.22, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Tráquea
+            ctx.fillStyle = '#38bdf8';
+            ctx.fillRect(w * 0.48, h * 0.15, w * 0.04, h * 0.20);
+            ctx.restore();
+
+            // Flujo de Partículas O2 / CO2
+            particles.forEach(p => {
+                if (currentPhase === 'inhale') {
+                    p.y += p.speed;
+                    if (p.y > 0.6) p.y = 0.1;
+                } else {
+                    p.y -= p.speed;
+                    if (p.y < 0.1) p.y = 0.6;
+                }
+
+                const px = w * 0.48 + (p.x * w * 0.04);
+                const py = h * p.y;
+
+                ctx.beginPath();
+                ctx.arc(px, py, currentEnv === 'seaLevel' ? 3.5 : 2.5, 0, Math.PI * 2);
+                ctx.fillStyle = currentPhase === 'inhale' 
+                    ? (currentEnv === 'seaLevel' ? '#38bdf8' : '#93c5fd')
+                    : '#fbbf24';
+                ctx.fill();
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        // Inicializar
+        setEnvironment('seaLevel');
+        animate();
+    </script>
+</body>
+</html>
