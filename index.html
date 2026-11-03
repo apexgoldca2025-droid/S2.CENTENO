@@ -27,13 +27,33 @@
                     <i class="fa-solid fa-plane-altitude text-sky-400"></i> Fisiología Respiratoria en Altitud
                 </h1>
                 <p class="text-xs md:text-sm text-gray-400 mt-1">
-                    Simulación Interactiva: Intercambio Gaseoso Sincronizado y Efecto Hipobárico
+                    Proceso Biológico Fundamental y Efecto Hipobárico
                 </p>
             </div>
             <span class="px-3 py-1 bg-sky-950 border border-sky-800 text-sky-400 text-xs font-semibold rounded-full">
                 Medicina Aeroespacial
             </span>
         </header>
+
+        <!-- Tarjeta de Concepto Fundamental (Agregado basado en la exposición) -->
+        <section class="bg-[#161b22] border border-gray-800 rounded-xl p-5 shadow-lg grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="p-4 bg-slate-900/60 rounded-lg border border-slate-800">
+                <h3 class="text-sm font-bold text-sky-400 mb-2 flex items-center gap-2">
+                    <i class="fa-solid fa-lungs"></i> 1. Respiración Externa (Ventilación)
+                </h3>
+                <p class="text-xs text-gray-300 leading-relaxed">
+                    Proceso biológico fundamental en el cual los seres vivos intercambian gases con su entorno. Se divide en dos fases: la <strong>inhalación</strong> (entrada de aire rico en O₂) y la <strong>exhalación</strong> (salida de aire con CO₂).
+                </p>
+            </div>
+            <div class="p-4 bg-slate-900/60 rounded-lg border border-slate-800">
+                <h3 class="text-sm font-bold text-amber-400 mb-2 flex items-center gap-2">
+                    <i class="fa-solid fa-atom"></i> 2. Respiración Celular
+                </h3>
+                <p class="text-xs text-gray-300 leading-relaxed">
+                    Proceso interno que ocurre dentro de cada célula de nuestro cuerpo. Utiliza el oxígeno transportado por la sangre para producir energía en todo el organismo de forma continua.
+                </p>
+            </div>
+        </section>
 
         <!-- Selector de Altura (Botones de Nivel) -->
         <section class="bg-[#161b22] border border-gray-800 rounded-xl p-4 shadow-lg">
@@ -70,7 +90,7 @@
                     </span>
                 </div>
 
-                <div class="relative w-full h-[320px] md:h-[360px] bg-slate-950 rounded-lg border border-slate-800 flex items-center justify-center overflow-hidden">
+                <div class="relative w-full h-[300px] md:h-[340px] bg-slate-950 rounded-lg border border-slate-800 flex items-center justify-center overflow-hidden">
                     <canvas id="respiratoryCanvas" class="w-full h-full block"></canvas>
                 </div>
 
@@ -151,13 +171,13 @@
         <p>Desarrollado por Alfredo Belandria</p>
     </footer>
 
-    <!-- Lógica JavaScript Altamente Coherente -->
+    <!-- Lógica JavaScript -->
     <script>
         const canvas = document.getElementById('respiratoryCanvas');
         const ctx = canvas.getContext('2d');
 
         let currentAlt = 0;
-        let breathTime = 0; // Control de tiempo rítmico natural
+        let breathTime = 0;
 
         let o2Particles = [];
         let co2Particles = [];
@@ -253,7 +273,7 @@
 
             reset() {
                 this.progress = Math.random();
-                this.speed = 0.008 + Math.random() * 0.002; // Velocidad pausada y natural
+                this.speed = 0.008 + Math.random() * 0.002;
                 this.targetSide = Math.random() < 0.5 ? 'right' : 'left';
                 this.offsetX = (Math.random() - 0.5) * 8;
                 this.offsetY = (Math.random() - 0.5) * 8;
@@ -458,21 +478,18 @@
             const w = canvas.width;
             const h = canvas.height;
 
-            // Frecuencia respiratoria natural (ni muy rápida ni muy lenta: ~5 segundos por ciclo completo)
             breathTime += 0.012;
             const sineVal = Math.sin(breathTime);
             const isInhaling = sineVal >= 0;
 
-            // Escala rítmica proporcional
             const scale = 0.93 + (sineVal > 0 ? sineVal : -sineVal) * 0.05;
 
-            // Actualizar etiqueta superior
             const cycleStatus = document.getElementById('cycleStatus');
             if (isInhaling) {
-                cycleStatus.innerHTML = '<i class="fa-solid fa-arrow-down-long"></i> INHALANDO O₂ (Pulmones llenándose)';
+                cycleStatus.innerHTML = '<i class="fa-solid fa-arrow-down-long"></i> INHALANDO O₂ (Ventilación Externa)';
                 cycleStatus.className = 'text-xs font-semibold px-3 py-1 rounded-full bg-sky-500/20 text-sky-400 border border-sky-500/40 animate-pulse';
             } else {
-                cycleStatus.innerHTML = '<i class="fa-solid fa-arrow-up-long"></i> EXHALANDO CO₂ (Pulmones vaciándose)';
+                cycleStatus.innerHTML = '<i class="fa-solid fa-arrow-up-long"></i> EXHALANDO CO₂ (Ventilación Externa)';
                 cycleStatus.className = 'text-xs font-semibold px-3 py-1 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/40 animate-pulse';
             }
 
