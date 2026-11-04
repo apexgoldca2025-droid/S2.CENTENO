@@ -35,7 +35,7 @@
             </span>
         </header>
 
-        <!-- Tarjeta de Concepto Fundamental (Agregado basado en la exposición) -->
+        <!-- Tarjeta de Concepto Fundamental -->
         <section class="bg-[#161b22] border border-gray-800 rounded-xl p-5 shadow-lg grid grid-cols-1 md:grid-cols-2 gap-4">
             <div class="p-4 bg-slate-900/60 rounded-lg border border-slate-800">
                 <h3 class="text-sm font-bold text-sky-400 mb-2 flex items-center gap-2">
@@ -79,7 +79,7 @@
         <!-- Visor Animado y Panel Informativo -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
-            <!-- Canvas Interactivo -->
+            <!-- Canvas Interactivo (Altura ampliada) -->
             <div class="lg:col-span-2 bg-[#161b22] border border-gray-800 rounded-xl p-4 shadow-xl flex flex-col justify-between relative overflow-hidden">
                 <div class="flex items-center justify-between border-b border-gray-800 pb-2 mb-2">
                     <span id="envBadge" class="text-xs font-semibold px-2.5 py-1 rounded bg-sky-900/80 text-sky-300 border border-sky-700">
@@ -90,7 +90,8 @@
                     </span>
                 </div>
 
-                <div class="relative w-full h-[300px] md:h-[340px] bg-slate-950 rounded-lg border border-slate-800 flex items-center justify-center overflow-hidden">
+                <!-- Contenedor del canvas con mayor altura (h-[360px] md:h-[430px]) -->
+                <div class="relative w-full h-[360px] md:h-[430px] bg-slate-950 rounded-lg border border-slate-800 flex items-center justify-center overflow-hidden">
                     <canvas id="respiratoryCanvas" class="w-full h-full block"></canvas>
                 </div>
 
@@ -121,48 +122,6 @@
             </div>
 
         </div>
-
-        <!-- Tabla Comparativa de Porcentajes de Gases -->
-        <section class="bg-[#161b22] border border-gray-800 rounded-xl p-5 shadow-xl">
-            <h3 class="text-sm md:text-base font-bold text-white mb-3 flex items-center gap-2">
-                <i class="fa-solid fa-chart-simple text-sky-400"></i> Composición de Gases Inhalados vs. Exhalados
-            </h3>
-            
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs md:text-sm">
-                <!-- Oxígeno (O2) -->
-                <div class="p-3 bg-slate-900/80 rounded-lg border border-slate-800">
-                    <div class="flex justify-between font-semibold text-sky-300 mb-1">
-                        <span>Oxígeno (O₂)</span>
-                        <i class="fa-solid fa-lungs"></i>
-                    </div>
-                    <p class="text-gray-400">Inhalado: <strong class="text-white">20.9%</strong></p>
-                    <p class="text-gray-400">Exhalado: <strong id="o2ExhaleText" class="text-sky-400">16.0%</strong></p>
-                    <span id="o2Note" class="text-[11px] text-gray-500 mt-1 block">Consumo tisular eficiente.</span>
-                </div>
-
-                <!-- Dióxido de Carbono (CO2) -->
-                <div class="p-3 bg-slate-900/80 rounded-lg border border-slate-800">
-                    <div class="flex justify-between font-semibold text-amber-400 mb-1">
-                        <span>Dióxido de Carbono (CO₂)</span>
-                        <i class="fa-solid fa-smog"></i>
-                    </div>
-                    <p class="text-gray-400">Inhalado: <strong class="text-white">0.04%</strong></p>
-                    <p class="text-gray-400">Exhalado: <strong id="co2ExhaleText" class="text-amber-400">4.0%</strong></p>
-                    <span id="co2Note" class="text-[11px] text-gray-500 mt-1 block">Eliminación metabólica normal.</span>
-                </div>
-
-                <!-- Nitrógeno y OTROS -->
-                <div class="p-3 bg-slate-900/80 rounded-lg border border-slate-800">
-                    <div class="flex justify-between font-semibold text-gray-300 mb-1">
-                        <span>Nitrógeno (N₂) y Humedad</span>
-                        <i class="fa-solid fa-cloud"></i>
-                    </div>
-                    <p class="text-gray-400">Nitrógeno: <strong class="text-white">78.0% (Constante)</strong></p>
-                    <p class="text-gray-400">Vapor de Agua: <strong class="text-sky-300">47 mmHg (37°C)</strong></p>
-                    <span class="text-[11px] text-gray-500 mt-1 block">Gas inerte en la respiración.</span>
-                </div>
-            </div>
-        </section>
 
     </div>
 
@@ -200,10 +159,6 @@
                 statusColor: "text-emerald-400",
                 badge: "Entorno: Nivel del Mar (760 mmHg)",
                 badgeColor: "bg-sky-900/80 text-sky-300 border-sky-700",
-                o2Exhale: "16.0%",
-                co2Exhale: "4.0%",
-                o2Note: "Intercambio gaseoso completo en la hematosis.",
-                co2Note: "Ritmo metabólico estable.",
                 points: [
                     { title: "Presión Barométrica Óptima", text: "La diferencia de presión facilita el transporte de O₂ a la hemoglobina." },
                     { title: "Frecuencia Respiratoria", text: "Ritmo basal eficiente en reposo (12-16 respiraciones/min)." }
@@ -218,10 +173,6 @@
                 statusColor: "text-yellow-400",
                 badge: "Entorno: 10,000 ft (523 mmHg)",
                 badgeColor: "bg-yellow-900/80 text-yellow-300 border-yellow-700",
-                o2Exhale: "16.8%",
-                co2Exhale: "3.6%",
-                o2Note: "Disminución leve en la absorción celular.",
-                co2Note: "Ligero aumento del volumen de ventilación.",
                 points: [
                     { title: "Inicio de Compensación", text: "Aumento progresivo de la frecuencia cardíaca y respiratoria." },
                     { title: "Visión Nocturna", text: "Sensibilidad visual ligeramente reducida en la penumbra." }
@@ -236,10 +187,6 @@
                 statusColor: "text-amber-400",
                 badge: "Entorno: 18,000 ft (380 mmHg)",
                 badgeColor: "bg-amber-900/80 text-amber-300 border-amber-700",
-                o2Exhale: "17.6%",
-                co2Exhale: "3.1%",
-                o2Note: "Menos O₂ captado por baja presión parcial.",
-                co2Note: "Hiperventilación reduce el CO₂ plasmático.",
                 points: [
                     { title: "Deterioro Cognitivo", text: "Juicio crítico alterado, lentitud de razonamiento y fatiga." },
                     { title: "Tiempo de Útil Conciencia", text: "TUC limitado a unos 20-30 minutos sin O₂ de emergencia." }
@@ -254,10 +201,6 @@
                 statusColor: "text-rose-400",
                 badge: "Entorno: 25,000 ft (282 mmHg)",
                 badgeColor: "bg-rose-900/80 text-rose-300 border-rose-700",
-                o2Exhale: "18.5%",
-                co2Exhale: "2.8%",
-                o2Note: "Mínima absorción alveolar por falta de gradiente.",
-                co2Note: "Hiperventilación severa expulsa CO₂.",
                 points: [
                     { title: "Tiempo Útil de Conciencia", text: "TUC de solo 3 a 5 minutos antes de la pérdida de conocimiento." },
                     { title: "Respiración Hipobárica", text: "La hemoglobina no logra saturarse adecuadamente de O₂." }
@@ -373,11 +316,6 @@
 
             document.getElementById('envBadge').innerText = data.badge;
             document.getElementById('envBadge').className = `text-xs font-semibold px-2.5 py-1 rounded border ${data.badgeColor}`;
-
-            document.getElementById('o2ExhaleText').innerText = data.o2Exhale;
-            document.getElementById('co2ExhaleText').innerText = data.co2Exhale;
-            document.getElementById('o2Note').innerText = data.o2Note;
-            document.getElementById('co2Note').innerText = data.co2Note;
 
             document.getElementById('effectCards').innerHTML = data.points.map(pt => `
                 <div class="p-3 bg-slate-900/80 rounded-lg border border-slate-800">
